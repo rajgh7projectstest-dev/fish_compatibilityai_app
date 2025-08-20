@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fish Compatibility & AI Assistant</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <style>
+    body {
+      background: linear-gradient(to bottom right, #e0f7fa, #ffffff);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    h1, h2 {
+      color: #00695c;
+      font-weight: bold;
+    }
+    .card {
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .btn-custom {
+      background-color: #00838f;
+      color: white;
+      border-radius: 10px;
+    }
+    .btn-custom:hover {
+      background-color: #004d40;
+    }
+    #ai-box {
+      height: 500px;
+      overflow-y: auto;
+      background: #ffffff;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .chat-msg {
+      padding: 6px 12px;
+      margin: 4px 0;
+      border-radius: 10px;
+    }
+    .chat-user {
+      background: #b2ebf2;
+      align-self: flex-end;
+    }
+    .chat-ai {
+      background: #ffe0b2;
+      align-self: flex-start;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid mt-4">
+    <div class="row">
+      <!-- Left: AI Assistant -->
+      <div class="col-md-4">
+        <div class="card p-3">
+          <h2 class="text-center">🤖 Ask AI About Fishkeeping</h2>
+          <div id="ai-box" class="d-flex flex-column"></div>
+          <div class="input-group">
+            <input type="text" id="ai-input" class="form-control" placeholder="Ask about fish care, tanks, feeding...">
+            <button class="btn btn-custom" onclick="askAI()">Ask</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Compatibility Tool -->
+      <div class="col-md-8">
+        <div class="card p-4">
+          <h1 class="text-center">🐠 Fish Compatibility Tool</h1>
+          <form method="post" action="/compute">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="tank_liters" class="form-label">Tank Size (Liters)</label>
+                <input type="number" name="tank_liters" id="tank_liters" class="form-control" value="60">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="tank_type" class="form-label">Tank Type</label>
+                <select name="tank_type" id="tank_type" class="form-select">
+                  <option value="community">Community</option>
+                  <option value="species-only">Species Only</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="temp_c" class="form-label">Temperature (°C)</label>
+                <input type="number" step="0.1" name="temp_c" id="temp_c" class="form-control" value="26">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="ph" class="form-label">pH</label>
+                <input type="number" step="0.1" name="ph" id="ph" class="form-control" value="7.0">
+              </div>
+            </div>
+
+            <h4>Select Fish Species (up to 8)</h4>
+            <div id="fish-selectors"></div>
+
+            <button type="submit" class="btn btn-custom mt-3">Check Compatibility</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load fish list dynamically
+    fetch("/static/fish_data.json")
+      .then(r => r.json())
+      .then(data => {
+        let container = document.getElementById("fish-selectors");
+        for (let i = 0; i < 8; i++) {
+          let select = document.createElement("select");
+          select.name = "species";
+          select.className = "form-select mb-2";
+          let defaultOpt = document.createElement("option");
+          defaultOpt.value = "";
+          defaultOpt.text = "Select a fish...";
+          select.appendChild(defaultOpt);
+          data.forEach(f => {
+            let opt = document.createElement("option");
+            opt.value = f.id;
+            opt.text = f.common_name;
+            select.appendChild(opt);
+          });
+          container.appendChild(select);
+        }
+      });
+
+    // AI Ask
+    function askAI() {
+      let q = document.getElementById("ai-input").value;
+      if (!q) return;
+      let box = document.getElementById("ai-box");
+
+      let userMsg = document.createElement("div");
+      userMsg.className = "chat-msg chat-user";
+      userMsg.innerText = q;
+      box.appendChild(userMsg);
+
+      fetch("/ask", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({question: q})
+      })
+      .then(r => r.json())
+      .then(data => {
+        let aiMsg = document.createElement("div");
+        aiMsg.className = "chat-msg chat-ai";
+        aiMsg.innerText = data.answer;
+        box.appendChild(aiMsg);
+        box.scrollTop = box.scrollHeight;
+      });
+
+      document.getElementById("ai-input").value = "";
+    }
+  </script>
+</body>
+</html>
