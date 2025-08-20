@@ -3,8 +3,11 @@
 <h2>Welcome to Fish Compatibility App</h2>
 <p>Check if your aquarium fish are compatible before setting up your tank.</p>
 {% if current_user.is_authenticated %}
-  <a href="{{ url_for('tool') }}" class="btn btn-success">Open Tool</a>
+  
+  <a href="{{ url_for('login_google') }}" class="btn btn-success">Try the Tool</a>
 {% else %}
-  <a href="{{ url_for('login') }}" class="btn btn-primary">Try the Tool</a>
+
+  <a href="{{ url_for('login_google') }}" class="btn btn-info">Open Tool</a>
+ 
 {% endif %}
 {% endblock %}
