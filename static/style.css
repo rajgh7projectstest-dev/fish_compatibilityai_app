@@ -1,0 +1,93 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f4faff;
+  color: #333;
+}
+
+.navbar {
+  background: #0077b6;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 20px;
+  align-items: center;
+}
+
+.navbar a {
+  color: white;
+  margin: 0 10px;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.navbar a:hover {
+  text-decoration: underline;
+}
+
+.nav-brand {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.container {
+  padding: 20px;
+}
+
+.footer {
+  background: #0077b6;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  margin-top: 40px;
+}
+
+.btn {
+  padding: 10px 16px;
+  border-radius: 6px;
+  margin: 10px 5px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: #0096c7;
+  color: white;
+  border: none;
+}
+
+.btn-secondary {
+  background: #90e0ef;
+  color: #03045e;
+  border: none;
+}
+
+/* Results page */
+.score-box {
+  margin: 20px 0;
+}
+.score-bar {
+  background: #ddd;
+  height: 20px;
+  border-radius: 10px;
+  margin-top: 5px;
+}
+.score-fill {
+  background: #00b4d8;
+  height: 20px;
+  border-radius: 10px;
+}
+
+/* AI form */
+.ai-form textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.ai-answer {
+  margin-top: 20px;
+  padding: 15px;
+  background: #e0f7fa;
+  border-left: 4px solid #0077b6;
+}

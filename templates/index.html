@@ -1,13 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Welcome to Fish Compatibility App</h2>
-<p>Check if your aquarium fish are compatible before setting up your tank.</p>
-{% if current_user.is_authenticated %}
-  
-  <a href="{{ url_for('login_google') }}" class="btn btn-success">Try the Tool</a>
-{% else %}
-
-  <a href="{{ url_for('login_google') }}" class="btn btn-info">Open Tool</a>
- 
-{% endif %}
+<div class="py-5 text-center">
+  <h1>Welcome to Fish Compatibility App</h1>
+  <p class="lead">Plan peaceful community tanks with smart tools and an AI helper.</p>
+  {% if not current_user.is_authenticated %}
+    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">Login with Google</a>
+  {% else %}
+    <a href="{{ url_for('dashboard') }}" class="btn btn-success btn-lg">Go to Dashboard</a>
+  {% endif %}
+</div>
 {% endblock %}

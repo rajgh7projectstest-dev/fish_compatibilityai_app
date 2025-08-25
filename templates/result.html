@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="py-3">
+  <h3>Result</h3>
+  {% if selected_fish and selected_fish|length > 0 %}
+    <div class="list-group">
+      {% for f in selected_fish %}
+        <div class="list-group-item">
+          <h5 class="mb-1">{{ f.name }}</h5>
+          <div class="small text-muted">
+            Compatible with: 
+            {% if f.compatibility_names %}
+              {{ f.compatibility_names | join(", ") }}
+            {% else %}
+              No compatibility listed
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No fish selected.</p>
+  {% endif %}
+  <a class="btn btn-link mt-3" href="{{ url_for('compute') }}">&larr; Back</a>
+</div>
+{% endblock %}

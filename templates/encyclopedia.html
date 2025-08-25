@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4 text-center">🐠 Fish Encyclopedia</h2>
+
+  <!-- Search bar -->
+  <div class="row mb-4">
+    <div class="col-md-8 offset-md-2">
+      <input type="text" id="searchInput" class="form-control" placeholder="Search for a fish by name...">
+    </div>
+  </div>
+
+  <!-- Fish cards -->
+  <div class="row" id="fishGrid">
+    {% for fish in fish_data %}
+    <div class="col-md-4 mb-4 fish-card">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{ fish.name }}</h5>
+          <p><b>Type:</b> {{ fish.type }}</p>
+          <p><b>pH Range:</b> {{ fish.ph_min }} - {{ fish.ph_max }}</p>
+          <p><b>Temperature:</b> {{ fish.temp_min }}°C - {{ fish.temp_max }}°C</p>
+          <p><b>Tank Size:</b> Min {{ fish.tank_size }} liters</p>
+          <p><b>Compatibility:</b> {{ fish.compatibility }}</p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  // Simple search filter
+  document.getElementById("searchInput").addEventListener("keyup", function() {
+    let filter = this.value.toLowerCase();
+    let cards = document.getElementsByClassName("fish-card");
+    for (let i = 0; i < cards.length; i++) {
+      let title = cards[i].querySelector(".card-title").innerText.toLowerCase();
+      cards[i].style.display = title.includes(filter) ? "" : "none";
+    }
+  });
+</script>
+{% endblock %}

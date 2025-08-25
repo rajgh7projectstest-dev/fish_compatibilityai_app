@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="py-3">
+  <h3>🐟 Fish Compatibility Check</h3>
+  <p class="text-muted">Search and select multiple fishes. We paginate results for speed.</p>
+
+  <form method="POST" action="{{ url_for('compute') }}">
+    <div class="mb-3">
+      <label for="fishSelect" class="form-label">Select Fishes</label>
+      <select id="fishSelect" name="fish_ids[]" class="form-control" multiple="multiple" style="width:100%;"></select>
+    </div>
+    <button type="submit" class="btn btn-primary">Check Compatibility</button>
+  </form>
+</div>
+
+<script>
+$(function() {
+  $('#fishSelect').select2({
+    placeholder: "Type to search fishes…",
+    allowClear: true,
+    ajax: {
+      url: "{{ url_for('fish_data_api') }}",
+      dataType: 'json',
+      delay: 200,
+      data: function (params) {
+        return {
+          q: params.term || "",
+          page: params.page || 1
+        };
+      },
+      processResults: function (data, params) {
+        params.page = params.page || 1;
+        return {
+          results: data.items,
+          pagination: { more: data.more }
+        };
+      },
+      cache: true
+    },
+    minimumInputLength: 0
+  });
+});
+</script>
+{% endblock %}

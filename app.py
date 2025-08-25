@@ -1,230 +1,209 @@
-import os, json, math
-from urllib.parse import urljoin, urlparse
+import os
+import json
+from math import ceil
+from datetime import datetime
 
-from flask import Flask, render_template, redirect, url_for, session, request, abort, jsonify, flash
+from flask import Flask, redirect, url_for, render_template, request, jsonify, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, current_user, logout_user
 from authlib.integrations.flask_client import OAuth
-from dotenv import load_dotenv
-import google.generativeai as genai   # ✅ Gemini AI SDK
+import requests
 
-# Load environment variables
-load_dotenv()
-
-# Flask setup
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'dev-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['APP_NAME'] = os.getenv('APP_NAME', 'Fish Compatibility System')
 
-# Database
+# ==== Core config (adjust SECRET_KEY for prod) ====
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///users.db")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# Keeps OAuth state cookie stable locally
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
 db = SQLAlchemy(app)
+login_manager = LoginManager(app)
+login_manager.login_view = "index"
 
-# Login manager
-login_manager = LoginManager()
-login_manager.init_app(app)
-
-@login_manager.unauthorized_handler
-def unauthorized():
-    flash("⚠️ Please login with Google to use this tool.")
-    return redirect(url_for("login_google", next=request.endpoint))
-
-# OAuth (Google)
-oauth = OAuth(app)
-oauth.register(
-    name='google',
-    client_id=os.getenv('GOOGLE_CLIENT_ID'),
-    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={'scope': 'openid email profile'}
-)
-
-# Gemini API config
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
-# User Model
+# ==== User model ====
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    sub = db.Column(db.String(255), unique=True, nullable=False)  # Google sub
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    name = db.Column(db.String(255), nullable=False)
-    avatar = db.Column(db.String(500))
+    email = db.Column(db.String(320), unique=True, nullable=False)
+    name = db.Column(db.String(200))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, int(user_id))
-
-# Helpers
-def is_safe_url(target):
-    ref_url = urlparse(request.host_url)
-    test_url = urlparse(urljoin(request.host_url, target))
-    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
-
-# Routes
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/login/google')
-def login_google():
-    redirect_uri = url_for('auth_google', _external=True)
-    return oauth.google.authorize_redirect(redirect_uri)
-
-@app.route('/auth/google')
-def auth_google():
-    token = oauth.google.authorize_access_token()
-    userinfo = token.get('userinfo') or oauth.google.parse_id_token(token)
-    if not userinfo:
-        abort(400, 'Google auth failed')
-    sub = userinfo['sub']
-    email = userinfo.get('email', '')
-    name = userinfo.get('name', 'User')
-    picture = userinfo.get('picture')
-
-    user = User.query.filter_by(sub=sub).first()
-    if not user:
-        user = User.query.filter_by(email=email).first()
-        if user:
-            user.sub = sub
-            user.name = name
-            user.avatar = picture
-        else:
-            user = User(sub=sub, email=email, name=name, avatar=picture)
-            db.session.add(user)
-        db.session.commit()
-
-    login_user(user, remember=True)
-    next_url = request.args.get('next')
-    if next_url and is_safe_url(next_url):
-        return redirect(next_url)
-    return redirect(url_for('tool'))
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('index'))
-
-def load_fish():
-    path = os.path.join(app.root_path, 'static', 'fish_data.json')
-    with open(path, 'r') as f:
-        return json.load(f)
-
-@app.route('/tool')
-@login_required
-def tool():
-    fish = load_fish()
-    return render_template('tool.html', fish=fish)
-
-def compatibility_score(picks, tank_liters, temp_c, ph, tank_type, fish_data):
-    issues = []
-    suggestions = []
-    score = 100
-
-    # Tank size rule
-    total_size = sum(f['size_cm'] for f in picks)
-    if total_size > tank_liters:
-        over = total_size - tank_liters
-        penalty = min(40, over * 0.5)
-        score -= penalty
-        issues.append(f"Stocking too high: {total_size:.1f} cm fish size > {tank_liters} L tank.")
-        suggestions.append("Reduce stocking or increase tank size.")
-
-    # Parameter mismatches
-    for f in picks:
-        if not (f['temp_min'] <= temp_c <= f['temp_max']):
-            score -= 8
-            issues.append(f"{f['common_name']} prefers {f['temp_min']}–{f['temp_max']}°C; your tank is {temp_c}°C.")
-        if not (f['ph_min'] <= ph <= f['ph_max']):
-            score -= 8
-            issues.append(f"{f['common_name']} prefers pH {f['ph_min']}-{f['ph_max']}; your tank is {ph}.")
-        if tank_liters < f['min_tank_l']:
-            score -= 6
-            issues.append(f"{f['common_name']} needs ≥ {f['min_tank_l']} L; your tank is {tank_liters} L.")
-
-    # Temperament conflicts
-    temperaments = [f['temperament'] for f in picks]
-    if 'aggressive' in temperaments and any(t == 'peaceful' for t in temperaments):
-        score -= 25
-        issues.append("Aggressive and peaceful species mixed—risk of bullying.")
-        suggestions.append("Avoid combining aggressive with peaceful species.")
-
-    if 'semi-aggressive' in temperaments and any(t == 'peaceful' for t in temperaments):
-        score -= 10
-        issues.append("Semi-aggressive with peaceful species may cause stress.")
-        suggestions.append("Add hiding spaces or separate groups.")
-
-    # Special cases
-    ids = {f['id'] for f in picks}
-    if 'betta' in ids and any(f['shoaling'] for f in picks if f['id'] != 'betta'):
-        score -= 10
-        issues.append("Betta may harass small shoaling fish.")
-    if 'angelfish' in ids and 'neon_tetra' in ids:
-        score -= 10
-        issues.append("Angelfish may prey on small tetras.")
-
-    # Tank type
-    if tank_type == 'species-only' and len(picks) > 1:
-        score -= 10
-        issues.append("Species-only tank should contain only one species.")
-    if tank_type == 'community' and any(t in ('aggressive',) for t in temperaments):
-        score -= 10
-        issues.append("Aggressive species not recommended in a community tank.")
-
-    # Shoaling
-    for f in picks:
-        if f.get('shoaling'):
-            suggestions.append(f"Keep {f['common_name']} in groups of 6+ for comfort.")
-
-    score = int(max(0, min(100, score)))
-    suggestions = list(dict.fromkeys(suggestions))
-    return score, issues, suggestions
-
-@app.route('/compute', methods=['POST'])
-@login_required
-def compute():
-    fish_all = load_fish()
-    fish_map = {f['id']: f for f in fish_all}
-    selected_ids = request.form.getlist('species')[:8]
-    picks = [fish_map[i] for i in selected_ids if i in fish_map]
-
-    try:
-        tank_liters = float(request.form.get('tank_liters', '60'))
-        temp_c = float(request.form.get('temp_c', '26'))
-        ph = float(request.form.get('ph', '7.0'))
-    except ValueError:
-        tank_liters, temp_c, ph = 60, 26, 7.0
-
-    tank_type = request.form.get('tank_type', 'community')
-    score, issues, suggestions = compatibility_score(picks, tank_liters, temp_c, ph, tank_type, fish_all)
-
-    return render_template('_results.html', picks=picks, score=score, issues=issues, suggestions=suggestions)
-
-# ✅ New Gemini AI endpoint
-@app.route('/ask', methods=['POST'])
-@login_required
-def ask_ai():
-    data = request.json
-    question = data.get("question", "").strip()
-    if not question:
-        return jsonify({"answer": "Please ask a valid question."}), 400
-
-    try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(question)
-        ai_answer = response.text if response else "No response from AI."
-        return jsonify({"answer": ai_answer})
-    except Exception as e:
-        return jsonify({"answer": f"⚠️ Error: {str(e)}"}), 500
-
-# Init DB
 with app.app_context():
     db.create_all()
 
-if __name__ == '__main__':
-    app.run(
-        host='0.0.0.0',
-        port=int(os.getenv('PORT', 8000)),
-        debug=True
-    )
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# ==== OAuth: Google WITHOUT 'openid' ====
+oauth = OAuth(app)
+google = oauth.register(
+    name="google",
+    client_id=os.environ.get("GOOGLE_CLIENT_ID"),
+    client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
+    access_token_url="https://oauth2.googleapis.com/token",
+    authorize_url="https://accounts.google.com/o/oauth2/v2/auth",
+    api_base_url="https://www.googleapis.com/",
+    client_kwargs={"scope": "email profile"},  # ❌ no 'openid' -> avoids jwks_uri issues
+)
+
+# ==== Helpers ====
+def fish_data_path():
+    # Always read from /static/fish_data.json
+    return os.path.join(app.root_path, "static", "fish_data.json")
+
+def load_fish_data():
+    path = fish_data_path()
+    if not os.path.exists(path):
+        # Empty fallback to avoid 500s if file missing
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    # Normalize shape
+    normalized = []
+    for item in data:
+        normalized.append({
+            "id": str(item.get("id") or item.get("Id") or item.get("ID")),
+            "name": item.get("name") or item.get("Name") or "",
+            "compatibility": [str(x) for x in (item.get("compatibility") or [])],
+        })
+    return [f for f in normalized if f["id"] and f["name"]]
+
+# ==== Routes ====
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/login")
+def login():
+    redirect_uri = url_for("authorize", _external=True)
+    # prompt=consent for first-time testing; remove later if you want silent SSO
+    return google.authorize_redirect(redirect_uri, prompt="consent", access_type="offline")
+
+@app.route("/authorize")
+def authorize():
+    # Exchange code for tokens (no ID-token parsing)
+    token = google.authorize_access_token()
+    # Always fetch userinfo explicitly (no jwks needed)
+    resp = google.get("https://openidconnect.googleapis.com/v1/userinfo", token=token)
+    info = resp.json() if resp else {}
+
+    email = info.get("email")
+    name = info.get("name") or email
+
+    if not email:
+        return "Google login failed (no email)", 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        user = User(email=email, name=name)
+        db.session.add(user)
+        db.session.commit()
+
+    login_user(user)
+    return redirect(url_for("dashboard"))
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    session.clear()
+    return redirect(url_for("index"))
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    return render_template("dashboard.html", user=current_user)
+
+# ---- Fish data API for Select2 (search + pagination) ----
+@app.route("/fish_data")
+@login_required
+def fish_data_api():
+    q = (request.args.get("q") or "").strip().lower()
+    page = int(request.args.get("page") or 1)
+    per_page = 20
+
+    fishes = load_fish_data()
+    if q:
+        fishes = [f for f in fishes if q in f["name"].lower()]
+
+    total = len(fishes)
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_items = fishes[start:end]
+    more = end < total
+
+    # Select2 expects {id, text}
+    items = [{"id": f["id"], "text": f["name"]} for f in page_items]
+    return jsonify({"items": items, "more": more})
+
+# ---- Compute compatibility ----
+@app.route("/compute", methods=["GET", "POST"])
+@login_required
+def compute():
+    fishes = load_fish_data()
+
+    if request.method == "POST":
+        selected_ids = request.form.getlist("fish_ids[]")
+        selected_map = {f["id"]: f for f in fishes}
+        selected = [selected_map[i] for i in selected_ids if i in selected_map]
+
+        # Attach readable compatibility names for display
+        for f in selected:
+            comp_names = []
+            for cid in f.get("compatibility", []):
+                other = selected_map.get(cid)
+                if other:
+                    comp_names.append(other["name"])
+            f["compatibility_names"] = comp_names
+
+        return render_template("result.html", selected_fish=selected)
+
+    # GET -> render page (Select2 will call /fish_data)
+    return render_template("compute.html")
+
+# ---- Ask AI (GET) ----
+@app.route("/ask")
+@login_required
+def ask():
+    question = (request.args.get("question") or "").strip()
+    if not question:
+        return jsonify({"answer": "Please type a question."})
+
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        # Fallback: tiny rule-based answer so UI works without a key
+        fallback = "I'm ready! Add GEMINI_API_KEY to get AI answers, but meanwhile: "
+        if "betta" in question.lower() and "gold" in question.lower():
+            return jsonify({"answer": fallback + "Generally, bettas and goldfish are not ideal tankmates due to temp and behavior differences."})
+        return jsonify({"answer": fallback + "Ask about tank mates, water params, diet, or care tips."})
+
+    # Call Gemini (simple text)
+    try:
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        payload = {
+            "contents": [{
+                "parts": [{"text": f"You are an aquarium assistant. Answer briefly: {question}"}]
+            }]
+        }
+        r = requests.post(f"{url}?key={api_key}", json=payload, timeout=20)
+        r.raise_for_status()
+        data = r.json()
+        txt = (
+            data.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        )
+        if not txt:
+            txt = "I couldn't get a response right now."
+        return jsonify({"answer": txt})
+    except Exception as e:
+        return jsonify({"answer": f"AI error: {e}"})
+
+
+# ---- Simple health route ----
+@app.route("/healthz")
+def healthz():
+    return "ok"
