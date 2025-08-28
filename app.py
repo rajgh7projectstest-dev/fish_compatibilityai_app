@@ -649,3 +649,16 @@ def healthz():
 # ---------- Run ----------
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+import os
+
+if __name__ == "__main__":
+    # Detect if running on Render/Production
+    if os.environ.get("RENDER") == "true":
+        # In production, Render will use Gunicorn (from Procfile)
+        pass
+    else:
+        # Local development (Windows) → use flask built-in server
+        app.run(debug=True, host="0.0.0.0", port=5000)
+
