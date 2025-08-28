@@ -60,12 +60,9 @@ google = oauth.register(
     name="google",
     client_id=os.environ.get("GOOGLE_CLIENT_ID"),
     client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
-    access_token_url="https://oauth2.googleapis.com/token",
-    authorize_url="https://accounts.google.com/o/oauth2/v2/auth",
-    api_base_url="https://www.googleapis.com/",
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
     client_kwargs={"scope": "openid email profile"},
 )
-
 # ---------- Fish data helpers ----------
 def fish_data_path():
     return os.path.join(app.root_path, "static", "fish_data.json")
@@ -645,13 +642,6 @@ def ask():
 @app.route("/healthz")
 def healthz():
     return "ok"
-
-# ---------- Run ----------
-if __name__ == "__main__":
-    app.run(debug=True)
-
-
-import os
 
 if __name__ == "__main__":
     # Detect if running on Render/Production
