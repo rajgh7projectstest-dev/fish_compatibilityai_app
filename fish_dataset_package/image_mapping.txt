@@ -1,0 +1,50 @@
+Goldfish -> /static/fish/goldfish.jpg -> PUBLIC DOMAIN URL TBD
+Guppy -> /static/fish/guppy.jpg -> PUBLIC DOMAIN URL TBD
+Neon Tetra -> /static/fish/neon_tetra.jpg -> PUBLIC DOMAIN URL TBD
+Betta -> /static/fish/betta.jpg -> PUBLIC DOMAIN URL TBD
+Corydoras -> /static/fish/corydoras.jpg -> PUBLIC DOMAIN URL TBD
+Cardinal Tetra -> /static/fish/cardinal_tetra.jpg -> PUBLIC DOMAIN URL TBD
+Rummy Nose Tetra -> /static/fish/rummy_nose_tetra.jpg -> PUBLIC DOMAIN URL TBD
+Harlequin Rasbora -> /static/fish/harlequin_rasbora.jpg -> PUBLIC DOMAIN URL TBD
+Cherry Barb -> /static/fish/cherry_barb.jpg -> PUBLIC DOMAIN URL TBD
+Tiger Barb -> /static/fish/tiger_barb.jpg -> PUBLIC DOMAIN URL TBD
+Zebra Danio -> /static/fish/zebra_danio.jpg -> PUBLIC DOMAIN URL TBD
+White Cloud Minnow -> /static/fish/white_cloud_minnow.jpg -> PUBLIC DOMAIN URL TBD
+Pearl Gourami -> /static/fish/pearl_gourami.jpg -> PUBLIC DOMAIN URL TBD
+Dwarf Gourami -> /static/fish/dwarf_gourami.jpg -> PUBLIC DOMAIN URL TBD
+Honey Gourami -> /static/fish/honey_gourami.jpg -> PUBLIC DOMAIN URL TBD
+Angelfish -> /static/fish/angelfish.jpg -> PUBLIC DOMAIN URL TBD
+Discus -> /static/fish/discus.jpg -> PUBLIC DOMAIN URL TBD
+Kribensis -> /static/fish/kribensis.jpg -> PUBLIC DOMAIN URL TBD
+Ram Cichlid -> /static/fish/ram_cichlid.jpg -> PUBLIC DOMAIN URL TBD
+Oscar -> /static/fish/oscar.jpg -> PUBLIC DOMAIN URL TBD
+Plecostomus -> /static/fish/plecostomus.jpg -> PUBLIC DOMAIN URL TBD
+Bristlenose Pleco -> /static/fish/bristlenose_pleco.jpg -> PUBLIC DOMAIN URL TBD
+Otocinclus -> /static/fish/otocinclus.jpg -> PUBLIC DOMAIN URL TBD
+Kuhli Loach -> /static/fish/kuhli_loach.jpg -> PUBLIC DOMAIN URL TBD
+Clown Loach -> /static/fish/clown_loach.jpg -> PUBLIC DOMAIN URL TBD
+Rainbowfish -> /static/fish/rainbowfish.jpg -> PUBLIC DOMAIN URL TBD
+Platy -> /static/fish/platy.jpg -> PUBLIC DOMAIN URL TBD
+Swordtail -> /static/fish/swordtail.jpg -> PUBLIC DOMAIN URL TBD
+Molly -> /static/fish/molly.jpg -> PUBLIC DOMAIN URL TBD
+Bolivian Ram -> /static/fish/bolivian_ram.jpg -> PUBLIC DOMAIN URL TBD
+Firemouth Cichlid -> /static/fish/firemouth_cichlid.jpg -> PUBLIC DOMAIN URL TBD
+Severum -> /static/fish/severum.jpg -> PUBLIC DOMAIN URL TBD
+Rosy Barb -> /static/fish/rosy_barb.jpg -> PUBLIC DOMAIN URL TBD
+Black Molly -> /static/fish/black_molly.jpg -> PUBLIC DOMAIN URL TBD
+Glass Catfish -> /static/fish/glass_catfish.jpg -> PUBLIC DOMAIN URL TBD
+Hillstream Loach -> /static/fish/hillstream_loach.jpg -> PUBLIC DOMAIN URL TBD
+YoYo Loach -> /static/fish/yoyo_loach.jpg -> PUBLIC DOMAIN URL TBD
+Siamese Algae Eater -> /static/fish/siamese_algae_eater.jpg -> PUBLIC DOMAIN URL TBD
+Panda Corydoras -> /static/fish/panda_corydoras.jpg -> PUBLIC DOMAIN URL TBD
+Emerald Corydoras -> /static/fish/emerald_corydoras.jpg -> PUBLIC DOMAIN URL TBD
+Silver Dollar -> /static/fish/silver_dollar.jpg -> PUBLIC DOMAIN URL TBD
+Pictus Catfish -> /static/fish/pictus_catfish.jpg -> PUBLIC DOMAIN URL TBD
+Bala Shark -> /static/fish/bala_shark.jpg -> PUBLIC DOMAIN URL TBD
+Flying Fox -> /static/fish/flying_fox.jpg -> PUBLIC DOMAIN URL TBD
+Paradise Fish -> /static/fish/paradise_fish.jpg -> PUBLIC DOMAIN URL TBD
+Killifish -> /static/fish/killifish.jpg -> PUBLIC DOMAIN URL TBD
+Giant Danio -> /static/fish/giant_danio.jpg -> PUBLIC DOMAIN URL TBD
+Threadfin Rainbowfish -> /static/fish/threadfin_rainbowfish.jpg -> PUBLIC DOMAIN URL TBD
+Endler's Livebearer -> /static/fish/endler's_livebearer.jpg -> PUBLIC DOMAIN URL TBD
+Swordtail Variatus -> /static/fish/swordtail_variatus.jpg -> PUBLIC DOMAIN URL TBD

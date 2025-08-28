@@ -1,44 +1,113 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="py-3">
-  <h3>🐟 Fish Compatibility Check</h3>
-  <p class="text-muted">Search and select multiple fishes. We paginate results for speed.</p>
+<div class="container mt-4">
+  <h2>Fish Compatibility Calculator</h2>
 
-  <form method="POST" action="{{ url_for('compute') }}">
-    <div class="mb-3">
-      <label for="fishSelect" class="form-label">Select Fishes</label>
-      <select id="fishSelect" name="fish_ids[]" class="form-control" multiple="multiple" style="width:100%;"></select>
+  {% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <form method="POST" id="compute-form">
+    <div id="fish-container">
+      {% if selected_ids %}
+        {% for fid in selected_ids %}
+        <div class="row mb-2 fish-row">
+          <div class="col-md-6">
+            <select name="fish_ids[]" class="form-control fish-select" data-initial-id="{{ fid }}"></select>
+          </div>
+          <div class="col-md-3">
+            <input type="number" name="fish_counts[]" value="{{ selected_counts[loop.index0] }}" min="1" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <button type="button" class="btn btn-danger remove-fish">Remove</button>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="row mb-2 fish-row">
+          <div class="col-md-6">
+            <select name="fish_ids[]" class="form-control fish-select"></select>
+          </div>
+          <div class="col-md-3">
+            <input type="number" name="fish_counts[]" value="1" min="1" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <button type="button" class="btn btn-danger remove-fish">Remove</button>
+          </div>
+        </div>
+      {% endif %}
     </div>
-    <button type="submit" class="btn btn-primary">Check Compatibility</button>
+
+    <button type="button" id="add-fish" class="btn btn-secondary">Add Fish</button>
+    <small class="text-muted ms-2">Tip: use search; results paginate for large databases.</small>
+    <br><br>
+    <button type="submit" class="btn btn-primary">Compute</button>
   </form>
 </div>
 
 <script>
-$(function() {
-  $('#fishSelect').select2({
-    placeholder: "Type to search fishes…",
-    allowClear: true,
-    ajax: {
-      url: "{{ url_for('fish_data_api') }}",
-      dataType: 'json',
-      delay: 200,
-      data: function (params) {
-        return {
-          q: params.term || "",
-          page: params.page || 1
-        };
-      },
-      processResults: function (data, params) {
-        params.page = params.page || 1;
-        return {
-          results: data.items,
-          pagination: { more: data.more }
-        };
-      },
-      cache: true
-    },
-    minimumInputLength: 0
-  });
+$(document).ready(function() {
+    const MAX_ROWS = 20; // client-side limit for huge DBs
+
+    function initSelect2(el, initialId) {
+        $(el).select2({
+            ajax: {
+                url: "{{ url_for('fish_data_api') }}",
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return { q: params.term || "", page: params.page || 1 };
+                },
+                processResults: function(data, params) {
+                    params.page = params.page || 1;
+                    return { results: data.items, pagination: { more: data.more } };
+                },
+                cache: true
+            },
+            placeholder: 'Select fish',
+            minimumInputLength: 0,
+            width: '100%',
+            allowClear: true
+        });
+
+        if (initialId) {
+            // Preload the option so Select2 shows the current selection
+            $.getJSON("{{ url_for('fish_data_api') }}", { id: initialId }, function(data) {
+                if (data && data.items && data.items.length > 0) {
+                    const it = data.items[0];
+                    const option = new Option(it.text, it.id, true, true);
+                    $(el).append(option).trigger('change');
+                }
+            });
+        }
+    }
+
+    // Init existing selects
+    $('.fish-select').each(function() {
+        let initialId = $(this).data('initial-id');
+        initSelect2(this, initialId);
+    });
+
+    // Add row
+    $('#add-fish').on('click', function() {
+        const count = $('#fish-container .fish-row').length;
+        if (count >= MAX_ROWS) {
+            alert("You've reached the maximum number of species for one calculation.");
+            return;
+        }
+        let row = `<div class="row mb-2 fish-row">
+            <div class="col-md-6"><select name="fish_ids[]" class="form-control fish-select"></select></div>
+            <div class="col-md-3"><input type="number" name="fish_counts[]" value="1" min="1" class="form-control"></div>
+            <div class="col-md-3"><button type="button" class="btn btn-danger remove-fish">Remove</button></div>
+        </div>`;
+        $('#fish-container').append(row);
+        initSelect2($('#fish-container .fish-row:last .fish-select'));
+    });
+
+    // Remove row
+    $(document).on('click', '.remove-fish', function() {
+        $(this).closest('.fish-row').remove();
+    });
 });
 </script>
 {% endblock %}

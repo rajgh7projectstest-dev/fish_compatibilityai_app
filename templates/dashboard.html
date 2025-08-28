@@ -1,8 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="py-4">
-  <h2>Hello, {{ user.name or current_user.name }} 👋</h2>
-  <p class="text-muted">Use the navigation to compute fish compatibility or ask quick AI questions.</p>
-  <a class="btn btn-primary" href="{{ url_for('compute') }}">Try Compatibility Tool</a>
+<div class="container mt-4">
+  <h2>Dashboard</h2>
+
+  <div class="card mb-4">
+    <div class="card-header">Start New Compatibility Check</div>
+    <div class="card-body">
+      <a href="{{ url_for('compute') }}" class="btn btn-primary">➕ New Check</a>
+      <small class="text-muted ms-2">Search scales to 1000+ species with pagination.</small>
+    </div>
+  </div>
+   <div class="card">
+    <div class="card-header">Last Report</div>
+    <div class="card-body">
+      {% if last_report %}
+        <p class="mb-1"><b>Tank Size:</b> {{ last_report.tank_l }} L ({{ last_report.tank_gal }} gal)</p>
+        <p class="mb-1"><b>Score:</b> {{ last_report.score }}%</p>
+        <p class="mb-2"><b>Fishes:</b>
+          {% for f in last_report.fishes %}
+            {{ f.name }} × {{ f.count }}{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </p>
+        <form method="POST" action="{{ url_for('download_report') }}">
+          {% for fid in last_report.selected_ids %}
+            <input type="hidden" name="fish_ids[]" value="{{ fid }}">
+          {% endfor %}
+          {% for f in last_report.fishes %}
+            <input type="hidden" name="fish_counts[]" value="{{ f.count }}">
+          {% endfor %}
+          <button type="submit" name="format" value="csv" class="btn btn-secondary">Download CSV</button>
+          <button type="submit" name="format" value="pdf" class="btn btn-secondary">Download PDF</button>
+        </form>
+      {% else %}
+        <p>No report yet. Run a <a href="{{ url_for('compute') }}">new check</a> to see it here.</p>
+      {% endif %}
+    </div>
+  </div>
 </div>
 {% endblock %}
